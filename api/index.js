@@ -7,6 +7,11 @@ app.use(cors());
 app.use(express.json());
 
 // 📩 Contact Form Route
+
+app.get("/",function(req,res){
+    res.send("server is running");
+})
+
 app.post("/api/v1/send", async (req, res) => {
     try {
         const { name, email, message } = req.body;
