@@ -7,11 +7,6 @@ app.use(cors());
 app.use(express.json());
 
 // 📩 Contact Form Route
-
-app.get("/",function(req,res){
-    res.send("server is running");
-})
-
 app.post("/api/v1/send", async (req, res) => {
     try {
         const { name, email, message } = req.body;
@@ -20,31 +15,48 @@ app.post("/api/v1/send", async (req, res) => {
             return res.status(400).json({ success: false, msg: "All fields are required" });
         }
 
-        // ✅ Transporter setup (use Gmail or your SMTP service)
+        // ✅ Transporter setup (Gmail SMTP)
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-                user: process.env.EMAIL_USER,   // your Gmail
-                pass: process.env.EMAIL_PASS,   // app password (not normal password!)
+                user: process.env.EMAIL_USER,   // your Gmail (sender)
+                pass: process.env.EMAIL_PASS,   // your App Password (not normal password)
             },
         });
 
-        // ✅ Mail options
-        const mailOptions = {
+        // ✅ Mail 1: Send to YOU (Admin)
+        await transporter.sendMail({
             from: email,
-            to: process.env.EMAIL_USER, // you will receive messages here
-            subject: `New Contact Form Submission from ${name}`,
+            to: process.env.EMAIL_USER, 
+            subject: `📩 New Contact Form Submission from ${name}`,
             text: `
-        Name: ${name}
-        Email: ${email}
-        Message: ${message}
-      `,
-        };
+Name: ${name}
+Email: ${email}
+Message: ${message}
+            `,
+        });
 
-        // ✅ Send mail
-        await transporter.sendMail(mailOptions);
+        // ✅ Mail 2: Auto-Reply to USER
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email, 
+            subject: `Thanks for contacting us, ${name}!`,
+            text: `
+Hi ${name},
+
+We have received your message:
+
+"${message}"
+
+Thank you for reaching out. We’ll get back to you shortly.
+
+Best Regards,  
+Shaheer
+            `,
+        });
 
         res.status(200).json({ success: true, msg: "Message sent successfully!" });
+
     } catch (error) {
         console.error("Error sending email:", error);
         res.status(500).json({ success: false, msg: "Failed to send message" });
